@@ -6,10 +6,13 @@ import time
 import os
 
 
-def createGrid(height, width, bounding_location, padding = 0, wall = False, wall_padding = 0):
+def createGrid(height, width, bounding_location, padding = 0, ptype = "true", wall = False, wall_padding = 0):
   image = np.full((height, width, 3), 255, dtype=np.uint8)
 
-  image = setObstaclesAndTruePadding(image, bounding_location, padding)
+  if ptype == "true":
+    image = setObstaclesAndTruePadding(image, bounding_location, padding)
+  else:
+    image = setObstaclesAndCircularPadding(image, bounding_location, padding)
 
   if wall:
     image = setWallPadding(image, wall_padding)
@@ -70,13 +73,52 @@ def setObstaclesAndTruePadding(image, bounding_location, padding):
 
   return image
 
+def setObstaclesAndCircularPadding(image, bounding_location, padding):
+  if padding > 0:
+    doPadding = True
+    paddings = [
+                [0, padding],
+                [0, -padding],
+                [padding, 0],
+                [-padding, 0],
+                ]
 
+  for obstacle in bounding_location:
+
+    if len(obstacle) == 2:
+      if doPadding:
+        for pad in paddings:
+          cv2.rectangle(image, (obstacle[0][0] - pad[0], obstacle[0][1] - pad[1]), (obstacle[1][0] + pad[0], obstacle[1][1] + pad[1]), (125, 125, 125), -1)
+        bound_points = sum(obstacle, [])
+        points = [(bound_points[0], bound_points[1]), (bound_points[2], bound_points[3]), (bound_points[0], bound_points[3]), (bound_points[2], bound_points[1])]
+        for point in points:
+          cv2.circle(image, point, padding, (125, 125, 125), -1)
+      cv2.rectangle(image, obstacle[0], obstacle[1], (0, 0, 0), -1)
+    else:
+      arr = np.array(obstacle, dtype=np.int32)
+      if doPadding:
+        for pad in paddings:
+          length = len(obstacle)
+          arrr = np.full((length, 2), pad)
+          cv2.fillPoly(image, pts=[np.subtract(arr, arrr)], color=(125, 125, 125))
+        for point in obstacle:
+          cv2.circle(image, tuple(np.int32(np.array(point))), padding, (125, 125, 125), -1)
+      cv2.fillPoly(image, pts=[arr], color=(0, 0, 0))
+
+  return image
+
+
+# New logic with negative grid to show features, and +ve grid means in open list but shows the current cost
 start = time.time()
 height = 500 # y size
 width = 1200 # x size
 padding = 5
 
 timestep = 0
+
+recording = True
+
+ptype = input("\nEnter padding type:")
 
 obstacle_file_path = ""
 
@@ -88,13 +130,17 @@ obstacle_bounding_boxes = [
 
 open = PriorityQueue()
 
+if recording:
+  size = (width, height)
+  fps = 90
+  record = cv2.VideoWriter('video.avi', cv2.VideoWriter_fourcc(*'MJPG'), fps, size)
 
 
 if os.path.exists(obstacle_file_path) and os.path.isfile(obstacle_file_path):
   pass
 else:
   # Enter array manually maybe through prompt
-  grid = createGrid(height, width, obstacle_bounding_boxes, padding, True, padding)
+  grid = createGrid(height, width, obstacle_bounding_boxes, padding, ptype, True, padding)
   backtrack_grid = np.full((height*width), -1)
 
 
@@ -142,6 +188,24 @@ while not open.empty():
       last_explored = explore
       print("\nGoal path found")
 
+      if recording:
+        # Image show
+        data = np.copy(grid)
+        # data[data == -1] = 60
+        # data[data == 2] = 100
+        # data[data == 3] = 140
+        data = data.reshape((height, width))
+        image = np.zeros((data.shape[0], data.shape[1], 3))
+        image[data == -1] = (224, 224, 224)
+        image[data == -11] = (0, 0, 0)
+        image[data == -12] = (125, 125, 125)
+        image[data == -13] = (152, 251, 152)
+        image[data == -4] = (0, 0, 255)
+        image[data >= 0] = (255, 0, 0)
+        image = cv2.flip(image, 0)
+        image = np.uint8(image)
+        record.write(image)
+
       break
 
     x_pos = int(current_pos % width)
@@ -186,6 +250,26 @@ while not open.empty():
         open.put((cost, neighbour))
 
 
+    if recording and (timestep < fps or timestep % 500 == 0):
+      # Image show
+      data = np.copy(grid)
+      # data[data == -1] = 60
+      # data[data == 2] = 100
+      # data[data == 3] = 140
+      data = data.reshape((height, width))
+      image = np.zeros((data.shape[0], data.shape[1], 3))
+      image[data == -1] = (224, 224, 224)
+      image[data == -11] = (0, 0, 0)
+      image[data == -12] = (125, 125, 125)
+      image[data == -13] = (152, 251, 152)
+      image[data == -4] = (0, 0, 255)
+      image[data >= 0] = (255, 0, 0)
+      image = cv2.flip(image, 0)
+      image = np.uint8(image)
+      # cv2_imshow(image)
+
+      record.write(image)
+
 timef = time.time() - start
 print(f"Goal found in {math.floor(timef/60)} minutes and {(timef % 60):.2f} seconds")
 
@@ -214,7 +298,33 @@ image[data >= 0] = (255, 0, 0)
 image = cv2.flip(image, 0)
 image = np.uint8(image)
 
-cv2.imshow(image)
+if recording:
+  for i in range(fps):
+    record.write(image)
 
 timef = time.time() - start
 print(f"Backtracking done in {math.floor(timef/60)} minutes and {(timef % 60):.2f} seconds")
+
+if recording:
+  record.release()
+
+
+cap = cv2.VideoCapture("video.avi")
+
+if (cap.isOpened()== False):
+  print("Error opening video stream or file")
+
+while cap.isOpened():
+  ret, frame = cap.read()
+
+  if ret == True:
+    cv2.imshow("Djikstra", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+      break
+
+  else:
+    break
+
+cv2.destroyAllWindows()
+cap.release()
