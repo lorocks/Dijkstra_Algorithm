@@ -4,6 +4,7 @@ import math
 import cv2
 import time
 import os
+import matplotlib.pyplot as plt
 
 
 
@@ -83,4 +84,13 @@ while not open.empty():
       open.put((round(explore[0] + 2**0.5, 3), neighbour, current_pos))
 
 
+backtrack = last_explored
+while backtrack[2] != -1:
+  grid[backtrack[1]] = 5
+  # print(backtrack[1])
+  for location in visited.queue:
+    if location[1] == backtrack[2] and location[0] < backtrack[0]:
+      backtrack = location
 
+data = grid.reshape((height, width))
+plt.imshow( data , cmap = 'magma' )
