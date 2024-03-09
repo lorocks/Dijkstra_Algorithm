@@ -140,15 +140,19 @@ height = 500
 # x size
 width = 1200 
 # Set padding length
-padding = 5
+padding = 0
 
 timestep = 0
 
 # Check if should create a video
-recording = True
+recording = False
 
-# Input padding type
-ptype = input("\nEnter padding type:")
+# Input variables
+ptype = input("\nEnter padding type: ")
+padding = int(input("\nEnter padding distance: "))
+recording = input("\nEnter if video should be recorded, y/n")
+if recording.lower() == 'y':
+  recording = True
 
 obstacle_file_path = ""
 
@@ -197,6 +201,7 @@ while not valid:
   except:
     print("\nStarting position invalid, obstacle exists, Enter again\n")
 
+
 # Ensure valid goal points
 valid = False
 while not valid:
@@ -224,7 +229,6 @@ while not open.empty():
   if not grid[current_pos] == -13:
     timestep += 1
     grid[current_pos] = -13
-    # print(explore)
 
     # Check if node is the goal node
     if current_pos == goal_index:
