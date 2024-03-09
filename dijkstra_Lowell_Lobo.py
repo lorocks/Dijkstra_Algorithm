@@ -6,19 +6,25 @@ import time
 import os
 
 
+# Function to create a grid for the algorithm
 def createGrid(height, width, bounding_location, padding = 0, ptype = "true", wall = False, wall_padding = 0):
+  # Create image to add obstacles and padding
   image = np.full((height, width, 3), 255, dtype=np.uint8)
 
+  # Select between obstacle and padding types
   if ptype == "true":
     image = setObstaclesAndTruePadding(image, bounding_location, padding)
   else:
     image = setObstaclesAndCircularPadding(image, bounding_location, padding)
 
+  # Set wall padding
   if wall:
     image = setWallPadding(image, wall_padding)
-
+  
+  # Convert 3D array to 2D array
   gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
+  
+  # Create array for algorithm
   grid = np.full((height, width), -1)
   grid[gray == 125] = -12
   grid[gray == 0] = -11
@@ -26,9 +32,12 @@ def createGrid(height, width, bounding_location, padding = 0, ptype = "true", wa
 
   return grid
 
+
+# Add wall paddings
 def setWallPadding(image, padding):
   height, width, _ = image.shape
 
+  # Define points for wall padding
   points = [
       (0, 0), (padding, height),
       (0, 0), (width, padding),
@@ -36,56 +45,68 @@ def setWallPadding(image, padding):
       (width - padding, 0), (width, height),
   ]
 
+  # Draw padding on image
   for i in range(0, len(points), 2):
     cv2.rectangle(image, points[i], points[i+1], (125, 125, 125), -1)
 
   return image
 
+
+# Set obstacles and true padding
 def setObstaclesAndTruePadding(image, bounding_location, padding):
+  # Set padding if padding is greater than 0
   if padding > 0:
     doPadding = True
+    # Define a padding array
     paddings = [
         [padding, padding],
-                [-padding, -padding],
-     [padding, -padding],
-      [-padding, padding],
-                [0, padding],
-                [0, -padding],
-                [padding, 0],
-                [-padding, 0]
+        [-padding, -padding],
+        [padding, -padding],
+        [-padding, padding],
+        [0, padding],
+        [0, -padding],
+        [padding, 0],
+        [-padding, 0],
                 ]
 
   for obstacle in bounding_location:
-
     if len(obstacle) == 2:
+      # Draw paddings
       if doPadding:
         for pad in paddings:
           cv2.rectangle(image, (obstacle[0][0] - pad[0], obstacle[0][1] - pad[1]), (obstacle[1][0] + pad[0], obstacle[1][1] + pad[1]), (125, 125, 125), -1)
+      # Draw obstacle
       cv2.rectangle(image, obstacle[0], obstacle[1], (0, 0, 0), -1)
     else:
       arr = np.array(obstacle, dtype=np.int32)
+      # Draw paddings
       if doPadding:
         for pad in paddings:
           length = len(obstacle)
           arrr = np.full((length, 2), pad)
           cv2.fillPoly(image, pts=[np.subtract(arr, arrr)], color=(125, 125, 125))
+      # Draw obstacle
       cv2.fillPoly(image, pts=[arr], color=(0, 0, 0))
 
   return image
 
+
+# Set obstacles and circular padding
 def setObstaclesAndCircularPadding(image, bounding_location, padding):
+  # Set padding if padding is greater than 0
   if padding > 0:
     doPadding = True
+    # Define a padding array
     paddings = [
-                [0, padding],
-                [0, -padding],
-                [padding, 0],
-                [-padding, 0],
+        [0, padding],
+        [0, -padding],
+        [padding, 0],
+        [-padding, 0],
                 ]
 
   for obstacle in bounding_location:
-
     if len(obstacle) == 2:
+      # Draw paddings
       if doPadding:
         for pad in paddings:
           cv2.rectangle(image, (obstacle[0][0] - pad[0], obstacle[0][1] - pad[1]), (obstacle[1][0] + pad[0], obstacle[1][1] + pad[1]), (125, 125, 125), -1)
@@ -93,9 +114,11 @@ def setObstaclesAndCircularPadding(image, bounding_location, padding):
         points = [(bound_points[0], bound_points[1]), (bound_points[2], bound_points[3]), (bound_points[0], bound_points[3]), (bound_points[2], bound_points[1])]
         for point in points:
           cv2.circle(image, point, padding, (125, 125, 125), -1)
+      # Draw obstacle
       cv2.rectangle(image, obstacle[0], obstacle[1], (0, 0, 0), -1)
     else:
       arr = np.array(obstacle, dtype=np.int32)
+      # Draw paddings
       if doPadding:
         for pad in paddings:
           length = len(obstacle)
@@ -103,39 +126,51 @@ def setObstaclesAndCircularPadding(image, bounding_location, padding):
           cv2.fillPoly(image, pts=[np.subtract(arr, arrr)], color=(125, 125, 125))
         for point in obstacle:
           cv2.circle(image, tuple(np.int32(np.array(point))), padding, (125, 125, 125), -1)
+      # Draw obstacle
       cv2.fillPoly(image, pts=[arr], color=(0, 0, 0))
 
   return image
 
 
-# New logic with negative grid to show features, and +ve grid means in open list but shows the current cost
+# Define variables for the algorithm
+
 start = time.time()
-height = 500 # y size
-width = 1200 # x size
+# y size
+height = 500 
+# x size
+width = 1200 
+# Set padding length
 padding = 5
 
 timestep = 0
 
+# Check if should create a video
 recording = True
 
+# Input padding type
 ptype = input("\nEnter padding type:")
 
 obstacle_file_path = ""
 
+# Define bounding boxes
 obstacle_bounding_boxes = [
-    [[175, 100], [100, 500] ], [[275, 400], [350, 0]],
+    [[175, 100], [100, 500] ], 
+    [[275, 400], [350, 0]],
     [[650 - (75*(3**0.5)), 325], [650 - (75*(3**0.5)), 175], [650, 100], [650 + (75*(3**0.5)), 175], [650 + (75*(3**0.5)), 325], [650, 400]],
     [[900, 450], [1100, 450], [1100, 50], [900, 50], [900, 125], [1020, 125], [1020, 375], [900, 375]],
                             ]
 
+# Create open list
 open = PriorityQueue()
 
+# Create a video writer
 if recording:
   size = (width, height)
   fps = 90
   record = cv2.VideoWriter('video.avi', cv2.VideoWriter_fourcc(*'MJPG'), fps, size)
 
 
+# Create grid and backtrack array
 if os.path.exists(obstacle_file_path) and os.path.isfile(obstacle_file_path):
   pass
 else:
@@ -144,6 +179,7 @@ else:
   backtrack_grid = np.full((height*width), -1)
 
 
+# Ensure valid starting points
 valid = False
 while not valid:
   starting_x = int(input("\nEnter starting x position:"))
@@ -161,6 +197,7 @@ while not valid:
   except:
     print("\nStarting position invalid, obstacle exists, Enter again\n")
 
+# Ensure valid goal points
 valid = False
 while not valid:
   goal_x = int(input("\nEnter goal x position:"))
@@ -175,25 +212,29 @@ while not valid:
   except:
     print("\nGoal position invalid, obstacle exists, Enter again\n")
 
+
+# Main algorithm logic
 while not open.empty():
+  # Query the node with least cost
   explore = open.get()
+  # Get current node location
   current_pos = explore[1]
 
+  # Check if node has been visited
   if not grid[current_pos] == -13:
     timestep += 1
     grid[current_pos] = -13
     # print(explore)
 
+    # Check if node is the goal node
     if current_pos == goal_index:
       last_explored = explore
       print("\nGoal path found")
 
+      # Save frame as video
       if recording:
         # Image show
         data = np.copy(grid)
-        # data[data == -1] = 60
-        # data[data == 2] = 100
-        # data[data == 3] = 140
         data = data.reshape((height, width))
         image = np.zeros((data.shape[0], data.shape[1], 3))
         image[data == -1] = (224, 224, 224)
@@ -208,11 +249,15 @@ while not open.empty():
 
       break
 
+    # x position for the current node
     x_pos = int(current_pos % width)
+    # y position for the current node
     y_pos = int((current_pos - (current_pos % width))/width)
+    # Define array to hold neighbours of the node
     neighbours_s = []
     neighbours_d = []
 
+    # Set neighbours
     if x_pos > 0: # left action
       neighbours_s.append(current_pos - 1)
     if x_pos < width - 1: # right action
@@ -230,32 +275,33 @@ while not open.empty():
     if x_pos < width - 1 and y_pos < height - 1: # right down action
       neighbours_d.append(((y_pos + 1)*width) + (x_pos + 1))
 
-  # add to open and grid only if not obstacle, RECHECK THIS CRAP
+    
     for neighbour in neighbours_s:
+      # Add to open and grid only if not obstacle or padded area
       if grid[neighbour] < -10:
         continue
       cost = explore[0] + 1
+      # Add neighbour to open list or update node
       if grid[neighbour] == -1 or grid[neighbour] > cost:
         grid[neighbour] = cost
         backtrack_grid[neighbour] = current_pos
         open.put((cost, neighbour))
 
     for neighbour in neighbours_d:
+      # Add to open and grid only if not obstacle or padded area
       if grid[neighbour] < -10:
         continue
       cost = explore[0] + 2**0.5
+      # Add neighbour to open list or update node
       if grid[neighbour] == -1 or grid[neighbour] > cost:
         grid[neighbour] = cost
         backtrack_grid[neighbour] = current_pos
         open.put((cost, neighbour))
 
-
+    # Save frame as video
     if recording and (timestep < fps or timestep % 500 == 0):
       # Image show
       data = np.copy(grid)
-      # data[data == -1] = 60
-      # data[data == 2] = 100
-      # data[data == 3] = 140
       data = data.reshape((height, width))
       image = np.zeros((data.shape[0], data.shape[1], 3))
       image[data == -1] = (224, 224, 224)
@@ -266,16 +312,18 @@ while not open.empty():
       image[data >= 0] = (255, 0, 0)
       image = cv2.flip(image, 0)
       image = np.uint8(image)
-      # cv2_imshow(image)
 
       record.write(image)
 
+# Print algorithm end time
 timef = time.time() - start
 print(f"Goal found in {math.floor(timef/60)} minutes and {(timef % 60):.2f} seconds")
 
+# Check backtracking time
 start = time.time()
 index = goal_index
 
+# Backtrack logic
 while backtrack_grid[index] > 0:
   grid[index] = -4
   index = backtrack_grid[index]
@@ -283,9 +331,6 @@ while backtrack_grid[index] > 0:
 
 # Image show
 data = np.copy(grid)
-# data[data == -1] = 60
-# data[data == 2] = 100
-# data[data == 3] = 140
 data = data.reshape((height, width))
 image = np.zeros((data.shape[0], data.shape[1], 3))
 image[data == -1] = (224, 224, 224)
@@ -298,17 +343,20 @@ image[data >= 0] = (255, 0, 0)
 image = cv2.flip(image, 0)
 image = np.uint8(image)
 
+# Save frame as video
 if recording:
   for i in range(fps):
     record.write(image)
 
+# Print backtrack end time
 timef = time.time() - start
 print(f"Backtracking done in {math.floor(timef/60)} minutes and {(timef % 60):.2f} seconds")
+
 
 if recording:
   record.release()
 
-
+# Display video of full algorithm
 cap = cv2.VideoCapture("video.avi")
 
 if (cap.isOpened()== False):
