@@ -361,22 +361,23 @@ if recording:
   record.release()
 
 # Display video of full algorithm
-cap = cv2.VideoCapture("video.avi")
+if recording:
+  cap = cv2.VideoCapture("video.avi")
 
-if (cap.isOpened()== False):
-  print("Error opening video stream or file")
+  if (cap.isOpened()== False):
+    print("Error opening video stream or file")
 
-while cap.isOpened():
-  ret, frame = cap.read()
+  while cap.isOpened():
+    ret, frame = cap.read()
 
-  if ret == True:
-    cv2.imshow("Djikstra", frame)
+    if ret == True:
+      cv2.imshow("Djikstra", frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+      if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+    else:
       break
 
-  else:
-    break
-
-cv2.destroyAllWindows()
-cap.release()
+  cv2.destroyAllWindows()
+  cap.release()
