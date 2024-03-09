@@ -6,17 +6,96 @@ import time
 import os
 
 
+def createGrid(height, width, bounding_location, padding = 0, wall = False, wall_padding = 0):
+  image = np.full((height, width, 3), 255, dtype=np.uint8)
 
+  image = setObstaclesAndTruePadding(image, bounding_location, padding)
+
+  if wall:
+    image = setWallPadding(image, wall_padding)
+
+  gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+  grid = np.full((height, width), -1)
+  grid[gray == 125] = -12
+  grid[gray == 0] = -11
+  grid = grid.reshape(-1)
+
+  return grid
+
+def setWallPadding(image, padding):
+  height, width, _ = image.shape
+
+  points = [
+      (0, 0), (padding, height),
+      (0, 0), (width, padding),
+      (0, height - padding), (width, height),
+      (width - padding, 0), (width, height),
+  ]
+
+  for i in range(0, len(points), 2):
+    cv2.rectangle(image, points[i], points[i+1], (125, 125, 125), -1)
+
+  return image
+
+def setObstaclesAndTruePadding(image, bounding_location, padding):
+  if padding > 0:
+    doPadding = True
+    paddings = [
+        [padding, padding],
+                [-padding, -padding],
+     [padding, -padding],
+      [-padding, padding],
+                [0, padding],
+                [0, -padding],
+                [padding, 0],
+                [-padding, 0]
+                ]
+
+  for obstacle in bounding_location:
+
+    if len(obstacle) == 2:
+      if doPadding:
+        for pad in paddings:
+          cv2.rectangle(image, (obstacle[0][0] - pad[0], obstacle[0][1] - pad[1]), (obstacle[1][0] + pad[0], obstacle[1][1] + pad[1]), (125, 125, 125), -1)
+      cv2.rectangle(image, obstacle[0], obstacle[1], (0, 0, 0), -1)
+    else:
+      arr = np.array(obstacle, dtype=np.int32)
+      if doPadding:
+        for pad in paddings:
+          length = len(obstacle)
+          arrr = np.full((length, 2), pad)
+          cv2.fillPoly(image, pts=[np.subtract(arr, arrr)], color=(125, 125, 125))
+      cv2.fillPoly(image, pts=[arr], color=(0, 0, 0))
+
+  return image
+
+
+start = time.time()
 height = 500 # y size
 width = 1200 # x size
+padding = 5
 
 timestep = 0
 
+obstacle_file_path = ""
+
+obstacle_bounding_boxes = [
+    [[175, 100], [100, 500] ], [[275, 400], [350, 0]],
+    [[650 - (75*(3**0.5)), 325], [650 - (75*(3**0.5)), 175], [650, 100], [650 + (75*(3**0.5)), 175], [650 + (75*(3**0.5)), 325], [650, 400]],
+    [[900, 450], [1100, 450], [1100, 50], [900, 50], [900, 125], [1020, 125], [1020, 375], [900, 375]],
+                            ]
 
 open = PriorityQueue()
 
-grid = np.full((height*width), -1)
-backtrack_grid = grid.copy()
+
+
+if os.path.exists(obstacle_file_path) and os.path.isfile(obstacle_file_path):
+  pass
+else:
+  # Enter array manually maybe through prompt
+  grid = createGrid(height, width, obstacle_bounding_boxes, padding, True, padding)
+  backtrack_grid = np.full((height*width), -1)
 
 
 valid = False
@@ -63,6 +142,7 @@ while not open.empty():
       last_explored = explore
       print("\nGoal path found")
 
+      break
 
     x_pos = int(current_pos % width)
     y_pos = int((current_pos - (current_pos % width))/width)
@@ -106,6 +186,10 @@ while not open.empty():
         open.put((cost, neighbour))
 
 
+timef = time.time() - start
+print(f"Goal found in {math.floor(timef/60)} minutes and {(timef % 60):.2f} seconds")
+
+start = time.time()
 index = goal_index
 
 while backtrack_grid[index] > 0:
@@ -128,4 +212,9 @@ image[data == -4] = (0, 0, 255)
 image[data >= 0] = (255, 0, 0)
 
 image = cv2.flip(image, 0)
-cv2.imshow("Frame", image)
+image = np.uint8(image)
+
+cv2.imshow(image)
+
+timef = time.time() - start
+print(f"Backtracking done in {math.floor(timef/60)} minutes and {(timef % 60):.2f} seconds")
