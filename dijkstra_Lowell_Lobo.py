@@ -134,7 +134,6 @@ def setObstaclesAndCircularPadding(image, bounding_location, padding):
 
 # Define variables for the algorithm
 
-start = time.time()
 # y size
 height = 500 
 # x size
@@ -152,7 +151,10 @@ ptype = input("\nEnter padding type: ")
 padding = int(input("\nEnter padding distance: "))
 recording = input("\nEnter if video should be recorded, y/n")
 if recording.lower() == 'y':
+  print("Video will be recorded")
   recording = True
+else:
+  recording = False
 
 obstacle_file_path = ""
 
@@ -218,6 +220,7 @@ while not valid:
     print("\nGoal position invalid, obstacle exists, Enter again\n")
 
 
+start = time.time()
 # Main algorithm logic
 while not open.empty():
   # Query the node with least cost
@@ -333,22 +336,22 @@ while backtrack_grid[index] > 0:
   index = backtrack_grid[index]
 
 
-# Image show
-data = np.copy(grid)
-data = data.reshape((height, width))
-image = np.zeros((data.shape[0], data.shape[1], 3))
-image[data == -1] = (224, 224, 224)
-image[data == -11] = (0, 0, 0)
-image[data == -12] = (125, 125, 125)
-image[data == -13] = (152, 251, 152)
-image[data == -4] = (0, 0, 255)
-image[data >= 0] = (255, 0, 0)
-
-image = cv2.flip(image, 0)
-image = np.uint8(image)
-
 # Save frame as video
 if recording:
+  # Image show
+  data = np.copy(grid)
+  data = data.reshape((height, width))
+  image = np.zeros((data.shape[0], data.shape[1], 3))
+  image[data == -1] = (224, 224, 224)
+  image[data == -11] = (0, 0, 0)
+  image[data == -12] = (125, 125, 125)
+  image[data == -13] = (152, 251, 152)
+  image[data == -4] = (0, 0, 255)
+  image[data >= 0] = (255, 0, 0)
+
+  image = cv2.flip(image, 0)
+  image = np.uint8(image)
+
   for i in range(fps):
     record.write(image)
 

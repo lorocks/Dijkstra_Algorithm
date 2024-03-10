@@ -21,3 +21,13 @@ Finally, enter 'y' or 'n' to choose whether a video should be recorded.
 'y' to make a video recording, 'n' to not record.
 
 The algorithm will execute and then display a video if recording is enabled.
+
+
+## Video Display
+After code execution, the algorithm and backtracking will be displayed as a video using OpenCV.
+A new video window will pop open and display it.
+
+
+## Execution Time
+When recording is enabled, the execution time will be around 1min.
+When recoding is disabled, the execution time will be around 6sec.
