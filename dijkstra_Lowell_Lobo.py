@@ -364,7 +364,6 @@ if recording:
   record.release()
 
 # Display video of full algorithm
-if recording:
   cap = cv2.VideoCapture("video.avi")
 
   if (cap.isOpened()== False):
@@ -382,5 +381,24 @@ if recording:
     else:
       break
 
-  cv2.destroyAllWindows()
   cap.release()
+else:
+  # Image show
+  data = np.copy(grid)
+  data = data.reshape((height, width))
+  image = np.zeros((data.shape[0], data.shape[1], 3))
+  image[data == -1] = (224, 224, 224)
+  image[data == -11] = (0, 0, 0)
+  image[data == -12] = (125, 125, 125)
+  image[data == -13] = (152, 251, 152)
+  image[data == -4] = (0, 0, 255)
+  image[data >= 0] = (255, 0, 0)
+
+  image = cv2.flip(image, 0)
+  image = np.uint8(image)
+
+  cv2.imshow("Final Path", image)
+  cv2.waitKey(0) 
+  
+
+cv2.destroyAllWindows() 

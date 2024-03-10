@@ -23,9 +23,16 @@ Finally, enter 'y' or 'n' to choose whether a video should be recorded.
 The algorithm will execute and then display a video if recording is enabled.
 
 
-## Video Display
+## Final Display
+If recording is enabled, 
+
 After code execution, the algorithm and backtracking will be displayed as a video using OpenCV.
 A new video window will pop open and display it.
+
+If recording is not enabled,
+
+After code execution, an image of the optimal path will be displayed.
+To close the image press any keyboard key.
 
 
 ## Execution Time
