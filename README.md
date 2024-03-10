@@ -39,4 +39,7 @@ When recoding is disabled, the execution time will be around 6sec.
 
 
 ## Video Link
-![Dijkstra Video Link](https://github.com/lorocks/Dijkstra_Algorithm/blob/main/dijkstra_Lowell_Lobo_video.avi)
+![Dijkstra Video Link]
+https://github.com/lorocks/Dijkstra_Algorithm/assets/63993526/322d1515-79e9-4453-8f36-e47c24aa4576
+
+
