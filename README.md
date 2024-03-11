@@ -1,6 +1,9 @@
 # Dijkstra_Algorithm
 The following implementation uses Dijkstra's algorithm to find the optimal path of a point object in a 2D graph.
 
+## GitHub Link
+https://github.com/lorocks/Dijkstra_Algorithm/
+
 ## Installing Dependencies
 ```bash
 # Install numpy
